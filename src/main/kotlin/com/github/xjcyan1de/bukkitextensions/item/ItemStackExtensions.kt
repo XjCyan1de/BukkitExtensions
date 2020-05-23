@@ -1,6 +1,7 @@
 package com.github.xjcyan1de.bukkitextensions.item
 
 import org.bukkit.Bukkit
+import org.bukkit.ChatColor
 import org.bukkit.Color
 import org.bukkit.Material
 import org.bukkit.inventory.ItemFlag
@@ -10,12 +11,6 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.inventory.meta.LeatherArmorMeta
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
-
-private val ALL_FLAGS = arrayOf(
-        ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_DESTROYS,
-        ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_PLACED_ON,
-        ItemFlag.HIDE_POTION_EFFECTS, ItemFlag.HIDE_UNBREAKABLE
-)
 
 @OptIn(ExperimentalContracts::class)
 fun ItemStack?.isNullOrAir(): Boolean {
@@ -56,6 +51,52 @@ var ItemStack.localizedName: String
             setLocalizedName(value)
         }
     }
+
+var ItemStack.text: List<String>
+    get() {
+        val displayName = displayName
+        val lore = lore
+        return if (displayName.isEmpty() && (lore == null || lore.isEmpty())) {
+            emptyList()
+        } else {
+            ArrayList<String>(1 + (lore?.size ?: 0)).apply {
+                add(displayName)
+                if (lore != null) {
+                    addAll(lore)
+                }
+            }
+        }
+    }
+    set(value) {
+        if (value.isEmpty()) {
+            meta {
+                setDisplayName(null)
+                lore = null
+            }
+        } else {
+            meta {
+                if (value.isNotEmpty()) {
+                    setDisplayName(ChatColor.RESET.toString() + value[0])
+                }
+                if (value.size > 1) {
+                    lore = value.subList(1, value.size).map { ChatColor.RESET.toString() + it }
+                }
+            }
+        }
+    }
+
+fun ItemStack.setText(text: Iterable<String>) {
+    this.text = text.toList()
+}
+
+fun ItemStack.setText(vararg text: String) {
+    this.text = text.toList()
+}
+
+fun ItemStack.setText(text: String) {
+    this.text = text.split("\n")
+}
+
 var ItemStack.damage: Int
     get() = if (itemMeta is Damageable) (itemMeta as Damageable).damage else 0
     set(value) {
@@ -84,9 +125,9 @@ var ItemStack.damagePercent: Double
         }
     }
 
-fun ItemStack.hideAttributes() = addItemFlags(*ALL_FLAGS)
+fun ItemStack.hideAttributes() = addItemFlags(*ItemFlag.values())
 
-fun ItemStack.showAttributes() = removeItemFlags(*ALL_FLAGS)
+fun ItemStack.showAttributes() = removeItemFlags(*ItemFlag.values())
 
 fun ItemStack.setColor(color: Color) {
     when (type) {
